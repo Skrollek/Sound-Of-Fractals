@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -O3 -std=c++17 -Wall
 
-OBJ = main.o
+OBJ = main.o Engine.o Button.o Fractal.o
 SFML = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network
 
 INC_DIR=.

@@ -1,22 +1,19 @@
 #ifndef ENGINE
 #define ENGINE
+#include "pch.hpp"
+#include "Button.hpp"
+
 class Engine
 {
 private:
-    static Engine *instance;
+    sf::RenderWindow *window;
+    sf::Event event;
+    std::vector<Button> buttons;
+    Engine();
+    void handleEvents();
 public:
-    Engine* getInstance()
-    {
-        if(instance == nullptr)
-            instance = new Engine;
-        return instance;
-    }
-
-    int run()
-    {
-        
-    }
+    static Engine* getInstance();
+    void run();
 };
-
 
 #endif
