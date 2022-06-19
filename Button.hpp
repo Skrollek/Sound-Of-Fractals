@@ -22,8 +22,13 @@ friend ButtonDrawer;
 private:
     ButtonState state;
     std::function<void()> action;
+    std::string label;
 public:
     void onEvent (sf::RenderWindow window, sf::Mouse mouse, void* data);
+    std::string getLabel();
+    void setLabel(std::string newLabel);
+    Button(std::string initialLabel);
+
 };
 
 
