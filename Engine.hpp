@@ -2,17 +2,67 @@
 #define ENGINE
 #include "pch.hpp"
 #include "Button.hpp"
+#include "Fractal.hpp"
 
 class Engine
 {
 private:
-    sf::RenderWindow *window;
+
+    bool fullscreen;
+    bool sustain;
+    bool color;
+    bool orbit;
+    bool dragging;
+    int frame;
+
+    double cameraX, cameraY;
+    double cameraZoom;
+    int cameraXFP;
+    int cameraYFP;
+    double cameraXDest;
+    double cameraYDest;
+    double cameraZoomDest;
+
+    double jx;
+    double jy;
+
+    std::vector<Button> buttons;
+
+    std::vector<std::pair<Fractal*, bool>> fractals;
+    unsigned currentFractalId;
+
+    sf::RenderWindow window;
+    int windowWidth;
+    int windowHeight;
     sf::Event event;
     sf::Font font;
-    std::vector<Button> buttons;
+
+    sf::RenderTexture renderTexture;
+    sf::RectangleShape fractalDrawing;
+    sf::RenderStates states;
+    sf::Sprite sprite;
+    sf::ContextSettings settings;
+
+    sf::Vector2i prevDrag;
+    sf::Vector2i currDrag;
+
     sf::Shader shader;
     Engine();
     void handleEvents();
+    void resizeWindow(int newWidth, int newHeight);
+    void changeWindow();
+    void selectFractal(int id);
+
+    void ScreenToPt(int x, int y, double& px, double& py) 
+    {
+        px = double(x - windowWidth  / 2) / cameraZoom - cameraX;
+        py = double(y - windowHeight / 2) / cameraZoom - cameraX;
+    }
+    void PtToScreen(double px, double py, int& x, int& y) {
+        x = int(cameraZoom * (px + cameraX)) + windowWidth  / 2;
+        y = int(cameraZoom * (py + cameraY)) + windowHeight / 2;
+    }
+
 public:
     static Engine* getInstance();
     void run();

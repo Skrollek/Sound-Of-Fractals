@@ -25,7 +25,12 @@ void Fractal::calculateOrbit(std::complex<double> point, std::complex<double> ba
     this->base = orbit[orbit.size() - 1]; 
 }
 
-std::complex<double> Mandlebrot::nextPoint(std::complex<double> point, std::complex<double> base)
+std::complex<double> Mandelbrot::nextPoint(std::complex<double> point, std::complex<double> base)
 {
     return point * point + base;
+}
+
+Mandelbrot::Mandelbrot()
+{
+    normalized = true;
 }

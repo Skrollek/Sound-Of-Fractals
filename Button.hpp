@@ -12,8 +12,10 @@ enum ButtonState
 class ButtonDrawer : public sf::Drawable
 {
 private:
-    sf::RectangleShape rect;
-    
+    sf::RectangleShape button;
+    sf::Text label;
+public:
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 };
 
 class Button

@@ -17,9 +17,12 @@
 #include <cstring>
 #include <functional>
 
-//#define M_PI 3.1415926535897932384
-#define FRACTALS 2
-#define SOUNDSIZE 44100
 
-#define MAX_POINT_DISTANCE_FROM_ORIGIN 32
+#define MAX_POINT_DISTANCE_FROM_ORIGIN 1000
 #define MAX_ORBIT_SAMPLES 400
+#define MAX_FPS 60
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 720
+#define STARTING_FRACTAL 0
+#define MAX_ITERS 1200
+
