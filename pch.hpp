@@ -16,6 +16,7 @@
 #include <complex.h>
 #include <cstring>
 #include <functional>
+#include <cassert>
 
 
 #define MAX_POINT_DISTANCE_FROM_ORIGIN 1000

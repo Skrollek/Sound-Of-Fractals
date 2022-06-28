@@ -9,28 +9,45 @@ enum ButtonState
     pressed
 };
 
+class Engine;
+class Button;
+
 class ButtonDrawer : public sf::Drawable
 {
+friend Button;
 private:
-    sf::RectangleShape button;
-    sf::Text label;
+    sf::Font font;
+    Button* button;
+    
 public:
-    void draw(sf::RenderTarget& target, sf::RenderStates states) const;
-};
+    void updateColor();
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
+    ButtonDrawer(Button* button);
+    std::string getLabel() const;
+    void setLabel(std::string newLabel);
+    void loadFontFromFile(std::string path);
+    void setFont(sf::Font& newFont);
+
+    sf::RectangleShape body;
+    sf::Color fontColor;
+    sf::Color inactiveColor;
+    sf::Color hoverColor;
+    sf::Color pressedColor;
+    sf::Text  label;
+};
 class Button
 {
 friend ButtonDrawer;
 private:
     ButtonState state;
+    ButtonDrawer* drawer;
     std::function<void()> action;
-    std::string label;
-public:
-    void onEvent (sf::RenderWindow window, sf::Mouse mouse, void* data);
-    std::string getLabel();
-    void setLabel(std::string newLabel);
-    Button(std::string initialLabel);
 
+public:
+    void handleEvent(sf::Event& event);
+    Button(std::string initialLabel, std::function<void(Engine*, void*)> initialAction, Engine* eng, void* data);
+    ButtonDrawer* getButtonDrawer();
 };
 
 

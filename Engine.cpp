@@ -4,12 +4,12 @@ Engine::Engine()
 {
     if (!shader.loadFromFile("vert.glsl", sf::Shader::Vertex)) 
     {
-        std::cerr << "Failed to compile vertex shader" << std::endl;
+        std::cerr << "Failed to load vertex shader" << std::endl;
         exit(1);
     }
     if (!shader.loadFromFile("frag.glsl", sf::Shader::Fragment)) 
     {
-        std::cerr << "Failed to compile fragment shader" << std::endl;
+        std::cerr << "Failed to load fragment shader" << std::endl;
         exit(1);
     }
     if(!font.loadFromFile("ASCII.ttf"))
@@ -24,6 +24,38 @@ Engine::Engine()
         auto f = new Mandelbrot();
         fractals[i] = {f, f->isNormalized()};
     }
+    
+    Button* resetButton = new Button("Reset View", [](Engine* eng, void* data)
+                                                {
+                                                    eng->cameraX = eng->cameraXDest = 0;
+                                                    eng->cameraY = eng->cameraYDest = 0;
+                                                    eng->cameraZoom = eng->cameraZoomDest = 100;
+                                                    eng->frame = 0;
+                                                }, this, NULL);
+    buttons.push_back(resetButton);
+    Button* fullscreenButton = new Button ("Toggle Fullscreen", [](Engine* eng, void* data)
+                                                                    {
+                                                                        bool* tfc = (bool*) data;
+                                                                        *tfc = true;
+                                                                    }, this, &toggleFullscreen);
+    
+    buttons.push_back(fullscreenButton);
+    static std::pair<bool*, int*> colorFramePair = std::make_pair(&color, &frame);
+    Button* useColorButton = new Button ("Start Using Color", [](Engine* eng, void* data)
+                                                                    {
+                                                                        std::pair<bool*, int*>* dt = (std::pair<bool*, int*>*) data;
+                                                                        *dt->first = !(*dt->first);
+                                                                        *dt->second = 0;
+                                                                    }, this, &colorFramePair);
+
+    buttons.push_back(useColorButton);
+    Button* takeScreenshotButton = new Button ("Take Screenshot", [](Engine* eng, void* data)
+                                                                        {
+                                                                            bool* sc = (bool*) data;
+                                                                            *sc = true;
+                                                                        }, this, &screenshot);
+    
+    buttons.push_back(takeScreenshotButton);                  
 }
 
 
@@ -42,6 +74,23 @@ void Engine::handleEvents()
         {
             window.close();
         }
+        else if (event.type == sf::Event::Resized)
+        {
+            resizeWindow(event.size.width, event.size.height);
+            resizeButtons();
+        }
+        else if (event.type == sf::Event::KeyPressed)
+        {
+            const sf::Keyboard::Key code = event.key.code;
+            if (code == sf::Keyboard::F11)
+            {
+                toggleFullscreen = true;
+            }
+            else
+            {
+                buttons[3]->handleEvent(event);
+            }
+        }
         else if (event.type == sf::Event::MouseWheelMoved)
         {
             cameraZoomDest *= std::pow(1.1f, event.mouseWheel.delta);
@@ -56,15 +105,29 @@ void Engine::handleEvents()
                 prevDrag = sf::Vector2i(event.mouseButton.x, event.mouseButton.y);
                 dragging = true;
             }
+            else if(event.mouseButton.button == sf::Mouse::Left)
+            {
+                leftPressed = true;
+                orbit = true;
+                ScreenToPt(event.mouseButton.x, event.mouseButton.y, baseX, baseY);
+                mouseX = baseX;
+                mouseY = baseY;
+            }
+            else if(event.mouseButton.button == sf::Mouse::Right)
+            {
+                orbit = false;
+            }
         }
         else if (event.type == sf::Event::MouseButtonReleased)
         {
             if(event.mouseButton.button == sf::Mouse::Middle)
             {
                 dragging = false;
-            } else if (event.mouseButton.button == sf::Mouse::Left)
+            } 
+            else if (event.mouseButton.button == sf::Mouse::Left)
             {
-                std::cerr << sf::Mouse::getPosition(window).x << " " << sf::Mouse::getPosition(window).y << std::endl; 
+                leftPressed = false;
+                //std::cerr << sf::Mouse::getPosition(window).x << " " << sf::Mouse::getPosition(window).y << std::endl; 
             }
         }
         else if (event.type == sf::Event::MouseMoved)
@@ -77,6 +140,16 @@ void Engine::handleEvents()
                 prevDrag = currDrag;
                 frame = 0;
             }
+            if(leftPressed)
+            {
+                ScreenToPt(event.mouseMove.x, event.mouseMove.y, baseX, baseY);
+                mouseX = baseX;
+                mouseY = baseY;
+            }
+        }
+        for(Button* btn : buttons)
+        {
+            btn->handleEvent(event);
         }
     }
 }
@@ -103,21 +176,43 @@ void Engine::changeWindow()
 
 void Engine::resizeWindow(int newWidth, int newHeight)
 {
-    renderTexture.create(newWidth, newHeight);
-    window.setView(sf::View (sf::FloatRect (0, 0, (float)newWidth, (float)newHeight) ) );
+    windowWidth = newWidth;
+    windowHeight = newHeight;
+    renderTexture.create(windowWidth, windowHeight);
+    window.setView(sf::View (sf::FloatRect (0, 0, (float)windowWidth, (float)windowHeight) ) );
     frame = 0;
 }
 
 void Engine::selectFractal(int id)
 {
-    shader.setUniform("iType", id);
+    shader.setUniform("iType", 2);
     orbit = false;
     frame = 0;
     currentFractalId = id;
 }
 
-template <typename T> int sgn(T val) {
-    return (T(0) < val) - (val < T(0));
+void Engine::resizeButtons()
+{
+    assert(cameraZoom > 0);
+    for(unsigned i = 0; i < buttons.size(); ++i)
+    {
+        buttons[i]->getButtonDrawer()->body.setPosition(0.9 * (float)windowWidth, 
+                                                          i * (float)windowHeight / buttons.size());
+        buttons[i]->getButtonDrawer()->body.setSize(sf::Vector2f(0.1 * (float)windowWidth,
+                                                                (float)windowHeight / buttons.size()));
+        buttons[i]->getButtonDrawer()->setFont(font);
+        buttons[i]->getButtonDrawer()->label.setPosition(0.9 * (float)windowWidth, 
+                                                           i * (float)windowHeight / buttons.size());
+
+        buttons[i]->getButtonDrawer()->fontColor     = sf::Color::Black;
+        buttons[i]->getButtonDrawer()->inactiveColor = sf::Color::Blue;
+        buttons[i]->getButtonDrawer()->hoverColor    = sf::Color::Green;
+        buttons[i]->getButtonDrawer()->pressedColor  = sf::Color::Red;
+        
+        buttons[i]->getButtonDrawer()->label.setCharacterSize(15 * 100 / cameraZoom);
+        buttons[i]->getButtonDrawer()->label.setStyle(sf::Text::Regular);
+    }
+    // sadly not so simple
 }
 
 void Engine::run()
@@ -134,13 +229,15 @@ void Engine::run()
                                           sf::BlendMode::Zero,
                                           sf::BlendMode::One, 
                                           sf::BlendMode::Add);
-    bool leftPressed = false;
     bool juliaDrag = false;
-    bool takeScreenshot = false;
 
-    sustain = true;
-    color = true;
+    sustain = false;
+    color = false;
     orbit = false;
+    leftPressed = false;
+    dragging = false;
+
+
     frame = 0;
     windowWidth  = WINDOW_WIDTH;
     windowHeight = WINDOW_HEIGHT;
@@ -165,10 +262,16 @@ void Engine::run()
     settings.majorVersion = 3;
     settings.minorVersion = 0;
 
-    changeWindow();
+    fullscreen = true;
+    toggleFullscreen = false;
 
+    changeWindow();
+    resizeButtons();
+    shader.setUniform("iType", 0);
     shader.setUniform("iCam", sf::Vector2f((float)cameraX, (float)cameraY));
     shader.setUniform("iZoom", (float)cameraZoom);
+
+    
 
     while(window.isOpen())
     {
@@ -178,12 +281,10 @@ void Engine::run()
         ScreenToPt(cameraXFP, cameraYFP, fpx, fpy);
         cameraZoom = cameraZoom * 0.8 + cameraZoomDest * 0.2;
         ScreenToPt(cameraXFP, cameraYFP, cameraXDelta, cameraYDelta);
-        cameraXDest += cameraXDelta - fpx;//sgn(cameraXDelta - fpx)*std::min(std::abs(cameraXDelta - fpx), 1.0);
-        cameraYDest += cameraYDelta - fpy;//sgn(cameraYDelta - fpy)*std::min(std::abs(cameraYDelta - fpy), 1.0);
-        if(std::abs(cameraXDelta - fpx) > 1000 || std::abs(cameraYDelta - fpy) > 1000)
-            std::cerr << "CameraX :" << cameraX << " " << cameraXDelta - fpx << " " << "CameraY :" << cameraY << " " << cameraYDelta - fpy << std::endl;
-        cameraX += cameraXDelta - fpx;//sgn(cameraXDelta - fpx)*std::min(std::abs(cameraXDelta - fpx), 1.0);
-        cameraY += cameraYDelta - fpy;//sgn(cameraYDelta - fpy)*std::min(std::abs(cameraYDelta - fpy), 1.0);
+        cameraXDest += cameraXDelta - fpx;
+        cameraYDest += cameraYDelta - fpy;
+        cameraX += cameraXDelta - fpx;
+        cameraY += cameraYDelta - fpy;
         cameraX = cameraX * 0.8 + cameraXDest * 0.2;
         cameraY = cameraY * 0.8 + cameraYDest * 0.2;
 
@@ -191,9 +292,8 @@ void Engine::run()
         const bool drawMset = (juliaDrag || !hasJulia);
         const bool drawJset = (juliaDrag || hasJulia);
         const int flags = (drawMset ? 0x01 : 0) | (false ? 0x02 : 0) | (color ? 0x04 : 0);
-        //std::cerr << cameraZoom << std::endl;
-        //std::cin.get();
-        const sf::Glsl::Vec2 windowRes((float)windowWidth, (float)windowHeight);
+        sf::Glsl::Vec2 windowRes((float)windowWidth, (float)windowHeight);
+
         shader.setUniform("iResolution", windowRes);
         shader.setUniform("iCam", sf::Vector2f((float)cameraX, (float)cameraY));
         shader.setUniform("iZoom", (float)cameraZoom);
@@ -205,9 +305,14 @@ void Engine::run()
         states = sf::RenderStates::Default;
         states.blendMode = (frame > 0 ? BlendAlpha : BlendIgnoreAlpha);
         states.shader = &shader;
+        
         fractalDrawing.setSize(windowRes);
         renderTexture.draw(fractalDrawing, states);
         renderTexture.display();
+
+        sprite.setTexture(renderTexture.getTexture());
+        window.clear();
+        window.draw(sprite, sf::RenderStates(BlendIgnoreAlpha));
 
         const double xSpeed = std::abs(cameraX - cameraXDest) * cameraZoomDest;
         const double ySpeed = std::abs(cameraY - cameraYDest) * cameraZoomDest;
@@ -218,10 +323,36 @@ void Engine::run()
             frame = 1;
         }
 
-        sprite.setTexture(renderTexture.getTexture());
-        window.clear();
-        window.draw(sprite, sf::RenderStates(BlendIgnoreAlpha));
+        for(Button* btn : buttons)
+        {
+            window.draw(*btn->getButtonDrawer());
+        }
+
+        if(orbit)
+        {
+            fractals[currentFractalId].first->calculateOrbit(std::complex(mouseX, mouseY), std::complex(baseX, baseY));
+            window.draw(*fractals[currentFractalId].first->getFractalDrawer());
+        }   
 
         window.display();
+
+        if(toggleFullscreen)
+        {
+            toggleFullscreen = false;
+            fullscreen = !fullscreen;
+            changeWindow();
+            resizeButtons();
+        }
+
+        if(screenshot)
+        {
+            screenshot = false;
+            window.display(); // make sure window is valid
+            sf::Texture texture;
+            texture.create(window.getSize().x, window.getSize().y);
+            texture.update(window);
+            texture.copyToImage().saveToFile("screenshot.png");
+        }
+        
     }
 }

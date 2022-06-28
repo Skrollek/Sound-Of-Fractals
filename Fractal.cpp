@@ -1,18 +1,24 @@
 #include "Fractal.hpp"
+#include "Engine.hpp"
 
 void FractalDrawer::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
     sf::VertexArray orbitLines(sf::LineStrip, fractal->orbit.size());
-    sf::Vector2u screen = target.getSize();
+    Engine* eng = Engine::getInstance();
     for(size_t it=0; it< fractal->orbit.size(); it++)
     {
-        orbitLines[it].position = sf::Vector2f(fractal->orbit[it].real() * 200 + (screen.x/2),
-                                               fractal->orbit[it].imag() * 200 + (screen.y/2));
+        int x,y;
+        eng->PtToScreen(fractal->orbit[it].real(), fractal->orbit[it].imag(), x, y);
+        orbitLines[it].position = sf::Vector2f((float)x, (float)y);
         orbitLines[it].color = sf::Color::Red;
     }
     target.draw(orbitLines, states);
 }
 
+FractalDrawer::FractalDrawer (Fractal* ini)
+{
+    fractal = ini;
+}
 void Fractal::calculateOrbit(std::complex<double> point, std::complex<double> base)
 {
     orbit.clear();
@@ -33,4 +39,7 @@ std::complex<double> Mandelbrot::nextPoint(std::complex<double> point, std::comp
 Mandelbrot::Mandelbrot()
 {
     normalized = true;
+    fd = new FractalDrawer(this);
+    id = 0;
+    NOsamples = MAX_ORBIT_SAMPLES;
 }

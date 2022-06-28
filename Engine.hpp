@@ -6,13 +6,18 @@
 
 class Engine
 {
+friend Button;
+friend FractalDrawer;
 private:
 
     bool fullscreen;
+    bool toggleFullscreen;
     bool sustain;
     bool color;
     bool orbit;
     bool dragging;
+    bool leftPressed;
+    bool screenshot;
     int frame;
 
     double cameraX, cameraY;
@@ -22,11 +27,13 @@ private:
     double cameraXDest;
     double cameraYDest;
     double cameraZoomDest;
+    double mouseX, mouseY;
+    double baseX, baseY;
 
     double jx;
     double jy;
 
-    std::vector<Button> buttons;
+    std::vector<Button*> buttons;
 
     std::vector<std::pair<Fractal*, bool>> fractals;
     unsigned currentFractalId;
@@ -52,13 +59,15 @@ private:
     void resizeWindow(int newWidth, int newHeight);
     void changeWindow();
     void selectFractal(int id);
+    void resizeButtons();
 
     void ScreenToPt(int x, int y, double& px, double& py) 
     {
         px = double(x - windowWidth  / 2) / cameraZoom - cameraX;
-        py = double(y - windowHeight / 2) / cameraZoom - cameraX;
+        py = double(y - windowHeight / 2) / cameraZoom - cameraY;
     }
-    void PtToScreen(double px, double py, int& x, int& y) {
+    void PtToScreen(double px, double py, int& x, int& y) 
+    {
         x = int(cameraZoom * (px + cameraX)) + windowWidth  / 2;
         y = int(cameraZoom * (py + cameraY)) + windowHeight / 2;
     }
