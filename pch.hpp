@@ -17,7 +17,10 @@
 #include <cstring>
 #include <functional>
 #include <cassert>
+#include <cstdint>
 
+
+#define WINDOWS
 
 #define MAX_POINT_DISTANCE_FROM_ORIGIN 1000
 #define MAX_ORBIT_SAMPLES 400
@@ -26,4 +29,7 @@
 #define WINDOW_HEIGHT 720
 #define STARTING_FRACTAL 0
 #define MAX_ITERS 1200
+
+#define SAMPLE_RATE 48000
+#define MAX_FREQ 4000
 

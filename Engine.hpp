@@ -3,6 +3,9 @@
 #include "pch.hpp"
 #include "Button.hpp"
 #include "Fractal.hpp"
+#include "SoundMaker.hpp"
+
+class SoundMaker;
 
 class Engine
 {
@@ -35,6 +38,8 @@ private:
 
     std::vector<Button*> buttons;
 
+    SoundMaker* soundmaker;
+
     std::vector<std::pair<Fractal*, bool>> fractals;
     unsigned currentFractalId;
 
@@ -42,18 +47,18 @@ private:
     int windowWidth;
     int windowHeight;
     sf::Event event;
+    
     sf::Font font;
-
     sf::RenderTexture renderTexture;
     sf::RectangleShape fractalDrawing;
     sf::RenderStates states;
     sf::Sprite sprite;
     sf::ContextSettings settings;
+    sf::Shader shader;
 
     sf::Vector2i prevDrag;
     sf::Vector2i currDrag;
-
-    sf::Shader shader;
+    
     Engine();
     void handleEvents();
     void resizeWindow(int newWidth, int newHeight);
@@ -75,6 +80,7 @@ private:
 public:
     static Engine* getInstance();
     void run();
+    Fractal* getCurrentFractal();
 };
 
 #endif

@@ -25,7 +25,7 @@ Engine::Engine()
         fractals[i] = {f, f->isNormalized()};
     }
     
-    Button* resetButton = new Button("Reset View", [](Engine* eng, void* data)
+    Button* resetButton = new Button("Reset\nView", [](Engine* eng, void* data)
                                                 {
                                                     eng->cameraX = eng->cameraXDest = 0;
                                                     eng->cameraY = eng->cameraYDest = 0;
@@ -33,7 +33,7 @@ Engine::Engine()
                                                     eng->frame = 0;
                                                 }, this, NULL);
     buttons.push_back(resetButton);
-    Button* fullscreenButton = new Button ("Toggle Fullscreen", [](Engine* eng, void* data)
+    Button* fullscreenButton = new Button ("Toggle\nFullscreen", [](Engine* eng, void* data)
                                                                     {
                                                                         bool* tfc = (bool*) data;
                                                                         *tfc = true;
@@ -41,7 +41,7 @@ Engine::Engine()
     
     buttons.push_back(fullscreenButton);
     static std::pair<bool*, int*> colorFramePair = std::make_pair(&color, &frame);
-    Button* useColorButton = new Button ("Start Using Color", [](Engine* eng, void* data)
+    Button* useColorButton = new Button ("Start\nUsing\nColor", [](Engine* eng, void* data)
                                                                     {
                                                                         std::pair<bool*, int*>* dt = (std::pair<bool*, int*>*) data;
                                                                         *dt->first = !(*dt->first);
@@ -49,13 +49,13 @@ Engine::Engine()
                                                                     }, this, &colorFramePair);
 
     buttons.push_back(useColorButton);
-    Button* takeScreenshotButton = new Button ("Take Screenshot", [](Engine* eng, void* data)
+    Button* takeScreenshotButton = new Button ("Take\nScreenshot", [](Engine* eng, void* data)
                                                                         {
                                                                             bool* sc = (bool*) data;
                                                                             *sc = true;
                                                                         }, this, &screenshot);
     
-    buttons.push_back(takeScreenshotButton);                  
+    buttons.push_back(takeScreenshotButton);                 
 }
 
 
@@ -110,12 +110,14 @@ void Engine::handleEvents()
                 leftPressed = true;
                 orbit = true;
                 ScreenToPt(event.mouseButton.x, event.mouseButton.y, baseX, baseY);
+                soundmaker->SetPoint(baseX, baseY);
                 mouseX = baseX;
                 mouseY = baseY;
             }
             else if(event.mouseButton.button == sf::Mouse::Right)
             {
                 orbit = false;
+                soundmaker->audio_pause = true;
             }
         }
         else if (event.type == sf::Event::MouseButtonReleased)
@@ -145,6 +147,7 @@ void Engine::handleEvents()
                 ScreenToPt(event.mouseMove.x, event.mouseMove.y, baseX, baseY);
                 mouseX = baseX;
                 mouseY = baseY;
+                soundmaker->SetPoint(baseX, baseY);
             }
         }
         for(Button* btn : buttons)
@@ -185,10 +188,12 @@ void Engine::resizeWindow(int newWidth, int newHeight)
 
 void Engine::selectFractal(int id)
 {
-    shader.setUniform("iType", 2);
+    shader.setUniform("iType", id);
     orbit = false;
     frame = 0;
     currentFractalId = id;
+    soundmaker->audio_pause = true;
+
 }
 
 void Engine::resizeButtons()
@@ -209,7 +214,7 @@ void Engine::resizeButtons()
         buttons[i]->getButtonDrawer()->hoverColor    = sf::Color::Green;
         buttons[i]->getButtonDrawer()->pressedColor  = sf::Color::Red;
         
-        buttons[i]->getButtonDrawer()->label.setCharacterSize(15 * 100 / cameraZoom);
+        buttons[i]->getButtonDrawer()->label.setCharacterSize(15);
         buttons[i]->getButtonDrawer()->label.setStyle(sf::Text::Regular);
     }
     // sadly not so simple
@@ -271,7 +276,8 @@ void Engine::run()
     shader.setUniform("iCam", sf::Vector2f((float)cameraX, (float)cameraY));
     shader.setUniform("iZoom", (float)cameraZoom);
 
-    
+    soundmaker = new SoundMaker(window.getSystemHandle());
+    soundmaker->normalized = fractals[currentFractalId].first->isNormalized();
 
     while(window.isOpen())
     {
@@ -290,7 +296,6 @@ void Engine::run()
 
         const bool hasJulia = (jx < 1e8);
         const bool drawMset = (juliaDrag || !hasJulia);
-        const bool drawJset = (juliaDrag || hasJulia);
         const int flags = (drawMset ? 0x01 : 0) | (false ? 0x02 : 0) | (color ? 0x04 : 0);
         sf::Glsl::Vec2 windowRes((float)windowWidth, (float)windowHeight);
 
@@ -355,4 +360,10 @@ void Engine::run()
         }
         
     }
+    soundmaker->stop();
+}
+
+Fractal* Engine::getCurrentFractal()
+{
+    return fractals[currentFractalId].first;
 }
