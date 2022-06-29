@@ -278,6 +278,7 @@ void Engine::run()
 
     soundmaker = new SoundMaker(window.getSystemHandle());
     soundmaker->normalized = fractals[currentFractalId].first->isNormalized();
+    soundmaker->play();
 
     while(window.isOpen())
     {
